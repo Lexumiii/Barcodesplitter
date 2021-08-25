@@ -9,79 +9,69 @@ from pyzbar.pyzbar import decode
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from re import compile
 
-
-
 #declaration
-batchFolder = './pdf/'
-imageFolder = './img/'
-
+batch_folder = './pdf/'
+image_folder = './img/'
 
 #body
-
-def createPageImage():
+def create_page_image():
     try:
         # Create target Directory
         os.mkdir('img')
     except FileExistsError:
         pass
     
-    for PDFfile in glob.glob(join(batchFolder, '*.pdf')):
-        filename = basename(PDFfile)
-        inputPDF = PdfFileReader('./pdf/' + filename)
+    for Pdf_file in glob.glob(join(batch_folder, '*.pdf')):
+        filename = basename(Pdf_file)
+        input_pdf = PdfFileReader('./pdf/' + filename)
         pagenum = 0
-        pages = convert_from_path(batchFolder + filename, 500)
+        pages = convert_from_path(batch_folder + filename, 500)
         
         for page in pages: 
-            pagename = imageFolder + filename.replace('.pdf', '') + '_' + str(pagenum) + '.png'
+            pagename = image_folder + filename.replace('.pdf', '') + '_' + str(pagenum) + '.png'
             pagenum += 1
             page.save(pagename, 'PNG')
             
-        checkCode(inputPDF, filename)
-    return True
+        check_code(input_pdf, filename)
            
 
-def checkCode(inputPDF, filename):
+def check_code(input_pdf, filename):
     pagenum = 0
-    test = False
+    found  = False
     output = PdfFileWriter()
-    for image in glob.glob(join(imageFolder, '*.png')):
-        readImage = cv2.imread(image)
-        regex = compile(r'X_(\d+)\.png')
-        decodeImage = decode(readImage)
+    pdf_name = str(basename(filename)).replace('.pdf', '')
+    for image in glob.glob(join(image_folder, '*.png')):
+        read_image = cv2.imread(image)
+        regex = compile(r'%s_(\d+)\.png' % (pdf_name))
+        decode_image = decode(read_image)
         pdf = PdfFileReader(open('./pdf/' + filename,'rb'))
         pages = pdf.getNumPages()
         if(int(pagenum) <= pages):
-            if decodeImage:
-                if decodeImage[0].type == 'QRCODE':
+            if decode_image: #check if qrcode is found on each page
+                if decode_image[0].type == 'QRCODE' or decode_image[0].type == 'BARCODE':
                     #create new pdf and add current file
                     pagenum = regex.findall(basename(image))[0]
-                    test = True
+                    found  = True
                     print('found: ' + str(pagenum))
-                    #create
-                    output.addPage(inputPDF.getPage(int(pagenum)))
+                    output.addPage(input_pdf.getPage(int(pagenum)))
                     with open('splitpdf' + str(pagenum) + '.pdf', 'wb') as outputStream:
                         output.write(outputStream)
-            else:
-                #add page to pdf
+            else: #if no barcode is found, add current page to previous created pdf
                 pagenum = int(pagenum)
-                if test == False:
-                    output.addPage(inputPDF.getPage(pagenum))
+                if found:
                     pagenum += 1
-                if test: 
-                    pagenum += 1
-                    output.addPage(inputPDF.getPage(pagenum))
-                    test = False
+                    output.addPage(input_pdf.getPage(pagenum))
+                    found  = False
                     print("none: " + basename(image))
+                else: 
+                    output.addPage(input_pdf.getPage(pagenum))
+                    pagenum += 1
  
-    for f in os.listdir(imageFolder):
-        os.remove(os.path.join(imageFolder, f))
+    for f in os.listdir(image_folder):
+        os.remove(os.path.join(image_folder, f))
     
-
-            
+        
 if __name__ == '__main__':
-    finished = False
-    finished = createPageImage()
-    while finished != True:
-        time.sleep(1)
+    create_page_image()
     
     
