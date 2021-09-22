@@ -7,12 +7,12 @@ import shutil
 
 class ColoredPrint:
     def __init__(self):
-        self.PINK = '\033[95m'
-        self.OKBLUE = '\033[94m'
-        self.OKGREEN = '\033[92m'
-        self.WARNING = '\033[93m'
-        self.FAIL = '\033[91m'
-        self.ENDC = '\033[0m'
+        self.PINK = '\u001b[35m'
+        self.OKBLUE = '\u001b[34m'
+        self.OKGREEN = '\u001b[32m'
+        self.WARNING = '\u001b[33m'
+        self.FAIL = '\u001b[31m'
+        self.ENDC = '\u001b[0m'
         self.LOGF = 'logfile.log'
         self.msg = ''
 
