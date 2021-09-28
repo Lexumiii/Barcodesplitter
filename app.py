@@ -4,14 +4,13 @@ import os
 import cv2
 import warnings
 import configparser
-import shutup
 from os.path import join, basename
 from pdf2image import convert_from_path
 from pyzbar.pyzbar import decode    
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from re import compile
 from utility import ColoredPrint, CalcTime, DirHandler
-from colors import red, green, blue
+from configGUI import CreateGui
 
 # install colored logging
 log = ColoredPrint()
@@ -23,12 +22,12 @@ config.read("./config.ini")
 
 
 # global declaration
-batch_folder = './input/'
-image_folder = './img/'
-output_folder = './output/'
-archive_folder = './archiv/'
-mimetype_pdf = '.pdf'
-mimetype_img = '.png'
+batch_folder = config.get('Folders', 'batch_folder')
+image_folder = config.get('Folders', 'image_folder')
+output_folder = config.get('Folders', 'output_folder')
+archive_folder = config.get('Folders', 'archive_folder')
+mimetype_pdf = config.get('Folders', 'mimetype_pdf')
+mimetype_img = config.get('Folders', 'mimetype_img')
 
 # get current date(day, month, year)
 time = CalcTime()
@@ -43,7 +42,6 @@ async def create_page_image():
     for pdf_file in glob.glob(join(batch_folder, '*.pdf')):
         filename = basename(pdf_file)
         log.success('PDF found, processing: ' + filename).store()
-        shutup.mute()
 
         # create pdf reader
         input_pdf = PdfFileReader(batch_folder + filename)
@@ -56,7 +54,6 @@ async def create_page_image():
             page.save(pagename, 'PNG')
             
         check = await check_code(input_pdf, filename)
-        shutup.unmute()
         if check: 
             log.success('Finished processing: ' + filename).store()
         else: 
