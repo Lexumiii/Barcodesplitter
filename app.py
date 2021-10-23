@@ -6,11 +6,10 @@ import warnings
 import configparser
 from os.path import join, basename
 from pdf2image import convert_from_path
-from pyzbar.pyzbar import decode    
+from pyzbar.pyzbar import decode
 from PyPDF2 import PdfFileWriter, PdfFileReader
 from re import compile
 from utility import ColoredPrint, CalcTime, DirHandler
-from configGUI import CreateGui
 
 # install colored logging
 log = ColoredPrint()
@@ -36,6 +35,7 @@ time = time.calc_time()
 # dir handler
 dir = DirHandler()
 
+
 async def create_page_image():
     """Convert pages to images and decode them, create new pdfs based on barcodes"""
     # loop over every pdf in folder
@@ -48,78 +48,96 @@ async def create_page_image():
         pagenum = 0
         pages = convert_from_path(batch_folder + filename, 500)
         # save pages as png
-        for page in pages: 
-            pagename = image_folder + filename.replace(mimetype_pdf, '') + '_' + str(pagenum) + mimetype_img
+        for page in pages:
+            pagename = image_folder + \
+                filename.replace(mimetype_pdf, '') + '_' + \
+                str(pagenum) + mimetype_img
             pagenum += 1
             page.save(pagename, 'PNG')
-            
+
+            # process pdf
         check = await check_code(input_pdf, filename)
-        if check: 
+        if check:
             log.success('Finished processing: ' + filename).store()
-        else: 
+        else:
             log.warn('There was no Barcode/Qrcode in the Pdf: ' + filename)
             dir.move_empty_pdf(filename)
     return True
-           
+
 
 async def check_code(input_pdf, filename):
-    pagenum = 0
-    pdfnum = 0
+    pagenum = 0, pdfnum = 0
     output = ""
-    code_check = False
-    found = False
-    create = True
+    code_check = False, found = False,  create = True
+
     # get name of pdf
     pdf_name = str(basename(filename)).replace(mimetype_pdf, '')
-    
+
     # decode images and create new pdfs
     for image in glob.glob(join(image_folder, '*.png')):
-        
-        create_message = 'Created file: ' + time['year'] + time['month'] + time['day'] + '_' + str(filename).replace(mimetype_pdf, '') + str(pdfnum) + mimetype_pdf + ' -- ' + time['year'] + '-' + time['month'] + '-' + time['day'] + ' ' + time['hour'] + ':' + time['minute'] + ':' + time['second']
+
+        # create message for log
+        create_message = 'Created file: ' + time['year'] + time['month'] + time['day'] + '_' + str(filename).replace(mimetype_pdf, '') + str(
+            pdfnum) + mimetype_pdf + ' -- ' + time['year'] + '-' + time['month'] + '-' + time['day'] + ' ' + time['hour'] + ':' + time['minute'] + ':' + time['second']
+
+        # read image of file
         read_image = cv2.imread(image)
+
+        # create regex for pdf name
         regex = compile(r'%s_(\d+)\.png' % (pdf_name))
+
         # ignore warnings
         warnings.filterwarnings('ignore')
 
+        # decode image
         decode_image = decode(read_image)
+
         # check if qrcode is found on each page
-        if decode_image: 
+        if decode_image:
             if decode_image[0].type != "":
-                code_check = True
-                create = False
+                code_check = True, create = False
                 if output:
-                    found  = False
+                    found = False
+                    # open new pdf
                     with open(output_folder + time['year'] + time['month'] + time['day'] + '_' + str(filename).replace(mimetype_pdf, '') + "_" + str(pdfnum) + mimetype_pdf, 'wb') as output_stream:
                         output.write(output_stream)
+
+                        # write log
                         log.write(create_message).store()
                         pdfnum += 1
+
+                        # create new output
                 output = PdfFileWriter()
-                # create new pdf and add current file
+
+                # add current page to pdf
                 pagenum = regex.findall(basename(image))[0]
-                found  = True 
+                found = True
                 output.addPage(input_pdf.getPage(int(pagenum)))
         else:
-            # if no barcode is found, add current page to previous created pdf       
+            # if no barcode is found, add current page to previous created pdf
             if create:
                 # remove images
                 dir.remove_images()
-                return code_check    
+                return code_check
             pagenum = int(pagenum)
             if found:
                 pagenum += 1
+                # add page to pdf
                 output.addPage(input_pdf.getPage(pagenum))
-            else: 
+            else:
+                # add page to pdf
                 output.addPage(input_pdf.getPage(pagenum))
                 pagenum += 1
+
     if output:
         with open(output_folder + time['year'] + time['month'] + time['day'] + '_' + str(filename).replace(mimetype_pdf, '') + str(pdfnum) + mimetype_pdf, 'wb') as output_stream:
             output.write(output_stream)
             log.write(create_message).store()
             pdfnum += 1
- 
+
     # remove images
     dir.remove_images()
-    
+
     # remove image folder
     dir.remove_folder('img')
     return code_check
@@ -137,7 +155,7 @@ def main():
         asyncio.run(create_page_image())
         dir.move_old_pdf()
         main()
-        
+
+
 if __name__ == '__main__':
     main()
-    

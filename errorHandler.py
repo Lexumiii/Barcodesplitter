@@ -10,7 +10,6 @@ class CreateMessage:
         self.language = self.configHandler.get('Options', 'language')
         
     def create(self, args):
-        errorHandler = configparser.ConfigParser()
-        errorHandler.read("./error.ini")
-        self.msg = errorHandler.get("MESSAGES", args)
+        # read config file
+        self.msg = self.configHandler.get("MESSAGES", args)
         return self.msg
