@@ -1,0 +1,1 @@
+# update analytics for scanned pages in database 

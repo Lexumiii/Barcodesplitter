@@ -66,9 +66,12 @@ async def create_page_image():
 
 
 async def check_code(input_pdf, filename):
-    pagenum = 0, pdfnum = 0
+    pagenum = 0
+    pdfnum = 0
     output = ""
-    code_check = False, found = False,  create = True
+    code_check = False
+    found = False
+    create = True
 
     # get name of pdf
     pdf_name = str(basename(filename)).replace(mimetype_pdf, '')
@@ -95,7 +98,8 @@ async def check_code(input_pdf, filename):
         # check if qrcode is found on each page
         if decode_image:
             if decode_image[0].type != "":
-                code_check = True, create = False
+                code_check = True
+                create = False
                 if output:
                     found = False
                     # open new pdf

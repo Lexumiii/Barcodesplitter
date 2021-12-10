@@ -2,17 +2,22 @@ import tkinter as tk
 import configparser
 import sys
 from googletrans import Translator
-from utility import ColoredPrint
+from utility import *
 from errorHandler import CreateMessage
 from subprocess import call
-from tkinter import messagebox, Button
+from tkinter import messagebox, Button, Radiobutton, Checkbutton, Entry, Text
 from tkinter import ttk
-
 
 
 # initialize root object
 root = tk.Tk()
 
+# get current date(day, month, year)
+time = CalcTime()
+time = time.calc_time()
+
+# dir handler
+dir = DirHandler()
 
 class CreateGui:
     def __init__(self):
@@ -65,17 +70,25 @@ class CreateGui:
         # Return list of tuples containing line numbers and lines where string is found
         return list_of_results
 
-    def changeConfig(self, option):
+    def changeConfig(self, option, text):
         """Not implemented yet"""
+        print("CONFIG: " + str(option))
         # find string in config file
         containArr = self.check_if_string_in_file('config.ini', str(option))
 
         if (containArr):
             print('Yes, string found in file', containArr)
+            msgText = (self.translator.translate(
+                'Konfiguration wurden gespeichert', dest=self.language)).text
+            
+            # replace current config
+            time = CalcTime()
+            time = time.calc_time()
+            
         else:
             print('String not found in file')
-        msgText = (self.translator.translate(
-            'Änderungen wurden gespeichert', dest=self.language)).text
+            msgText = (self.translator.translate(
+                'Konfiguration konnte nicht gefunden werden', dest=self.language)).text
         messagebox.showinfo('Message', msgText)
 
     # call main function
@@ -84,6 +97,7 @@ class CreateGui:
     def create(self):
         # create canvas
         root.title = self.title
+        root.geometry("400x400")
         tabControl = ttk.Notebook(root)
 
         # create tabs
@@ -96,17 +110,30 @@ class CreateGui:
                 self.translator.translate('Barcodesplitter', dest=self.language)).text)
 
             # add option tab
-            tabControl.add(configTab, text=(self.translator.translate(
-                'Konfiguration', dest=self.language)).text)
+            tabControl.add(configTab, text=((self.translator.translate(
+                'Konfiguration', dest=self.language)).text).capitalize())
             tabControl.pack(expand=1, fill='both')
 
             # add elements
             startProgramText = str(self.translator.translate(
                 'Program starten', dest=self.language).text)
             startProgram = Button(mainTab, text=startProgramText,
-                                command=self.callpy)
+                                  command=self.callpy)
             startProgram.grid(column=2, row=1)
-            
+
+            # add input field for output file name
+            outNameText = str(self.translator.translate(
+                'Dateiname', dest=self.language).text)
+            outName = Entry(configTab, text=outNameText)
+            outName.grid(column=1, row=1)
+
+            # create save Button
+            saveText = str(self.translator.translate(
+                'Sichern', dest=self.language).text)
+            save = Button(configTab, text=saveText.capitalize(),
+                          command=lambda: self.changeConfig("File", outName.get()))
+            save.grid(column=2, row=1)
+
             root.mainloop()
         except ValueError:
             self.log.err(self.errorHandler.create('invalid_lang'))
